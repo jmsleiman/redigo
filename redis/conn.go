@@ -565,3 +565,19 @@ func (c *conn) Do(cmd string, args ...interface{}) (interface{}, error) {
 	}
 	return reply, err
 }
+
+func (c *conn) DoUntilSucceeds(cmd string, args ...interface{}) (interface{}, error) {
+	response, err := c.Do(cmd, args...)
+	for {
+		if err != nil {
+			if err.Error() == "redigo: connection pool exhausted" {
+				sleep := time.Duration(100) * time.Millisecond
+				time.Sleep(sleep)
+			}
+		} else {
+			break
+		}
+		response, err = c.Do(cmd, args...)
+	}
+	return response, err
+}

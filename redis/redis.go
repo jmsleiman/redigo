@@ -33,6 +33,10 @@ type Conn interface {
 	// Do sends a command to the server and returns the received reply.
 	Do(commandName string, args ...interface{}) (reply interface{}, err error)
 
+	// DoUntilSucceeds will attempt to run Do, looping over connection issues,
+	// until the query finally succeeds.
+	DoUntilSucceeds(commandName string, args ...interface{}) (reply interface{}, err error)
+
 	// Send writes the command to the client's output buffer.
 	Send(commandName string, args ...interface{}) error
 

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/url"
 	"regexp"
@@ -564,4 +565,20 @@ func (c *conn) Do(cmd string, args ...interface{}) (interface{}, error) {
 		}
 	}
 	return reply, err
+}
+
+func (c *conn) DoUntilSucceeds(cmd string, args ...interface{}) (interface{}, error) {
+	response, err := c.Do(cmd, args)
+	for {
+		if err.Error() == "redigo: connection pool exhausted" {
+			seed := rand.NewSource(time.Now().UnixNano())
+			rand := rand.New(seed)
+			sleep := time.Duration(rand.Intn(10000)) * time.Millisecond
+		} else {
+			break
+		}
+		response, err = c.Do(cmd, args)
+	}
+	return response, err
+
 }

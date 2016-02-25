@@ -369,6 +369,22 @@ func (pc *pooledConnection) Do(commandName string, args ...interface{}) (reply i
 	return pc.c.Do(commandName, args...)
 }
 
+func (pc *pooledConnection) DoUntilSucceeds(cmd string, args ...interface{}) (interface{}, error) {
+	response, err := pc.Do(cmd, args...)
+	for {
+		if err != nil {
+			if err.Error() == "redigo: connection pool exhausted" {
+				sleep := time.Duration(100) * time.Millisecond
+				time.Sleep(sleep)
+			}
+		} else {
+			break
+		}
+		response, err = pc.Do(cmd, args...)
+	}
+	return response, err
+}
+
 func (pc *pooledConnection) Send(commandName string, args ...interface{}) error {
 	ci := internal.LookupCommandInfo(commandName)
 	pc.state = (pc.state | ci.Set) &^ ci.Clear
@@ -386,8 +402,11 @@ func (pc *pooledConnection) Receive() (reply interface{}, err error) {
 type errorConnection struct{ err error }
 
 func (ec errorConnection) Do(string, ...interface{}) (interface{}, error) { return nil, ec.err }
-func (ec errorConnection) Send(string, ...interface{}) error              { return ec.err }
-func (ec errorConnection) Err() error                                     { return ec.err }
-func (ec errorConnection) Close() error                                   { return ec.err }
-func (ec errorConnection) Flush() error                                   { return ec.err }
-func (ec errorConnection) Receive() (interface{}, error)                  { return nil, ec.err }
+func (ec errorConnection) DoUntilSucceeds(string, ...interface{}) (interface{}, error) {
+	return nil, ec.err
+}
+func (ec errorConnection) Send(string, ...interface{}) error { return ec.err }
+func (ec errorConnection) Err() error                        { return ec.err }
+func (ec errorConnection) Close() error                      { return ec.err }
+func (ec errorConnection) Flush() error                      { return ec.err }
+func (ec errorConnection) Receive() (interface{}, error)     { return nil, ec.err }

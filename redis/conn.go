@@ -574,6 +574,7 @@ func (c *conn) DoUntilSucceeds(cmd string, args ...interface{}) (interface{}, er
 			seed := rand.NewSource(time.Now().UnixNano())
 			rand := rand.New(seed)
 			sleep := time.Duration(rand.Intn(10000)) * time.Millisecond
+			time.Sleep(sleep)
 		} else {
 			break
 		}
